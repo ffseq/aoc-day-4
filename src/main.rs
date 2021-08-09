@@ -1,7 +1,8 @@
-use std::{fs::File, io::{BufReader, prelude::*}};
+use std::{fs::File, io::{BufReader, prelude::*}, ops::RangeBounds};
 
-const INPUT_FILE: &str = "input.txt";
+const INPUT_FILE: &str = "testin.txt";
 
+#[derive(Debug)]
 struct Passport {
     byr: Option<String>,
     iyr: Option<String>,
@@ -43,17 +44,49 @@ impl Passport {
     }
     
     fn is_valid(&self) -> bool {
-        matches!(self, Passport {
-                byr: Some(_),
-                iyr: Some(_),
-                eyr: Some(_),
-                hgt: Some(_),
-                hcl: Some(_),
-                ecl: Some(_),
-                pid: Some(_),
+        match self {
+            Passport {
+                byr: Some(byr),
+                iyr: Some(iyr),
+                eyr: Some(eyr),
+                hgt: Some(hgt),
+                hcl: Some(hcl),
+                ecl: Some(ecl),
+                pid: Some(pid),
                 cid: _,
-        })
+            } => {
+                //println!("{:?}", &self);
+                let byr_valid = str_in_range(byr, 1920..=2002);
+                let iyr_valid = str_in_range(iyr, 2010..=2020);
+                let eyr_valid = str_in_range(eyr, 2020..=2030);
+                let hgt_valid =
+                    match hgt.get(hgt.len()-2..) {
+                        Some("cm") => {
+                            if let Some(num_part) = hgt.get(..hgt.len()-2) {
+                                str_in_range(num_part, 150..=193)
+                            } else {
+                                false
+                            }
+                        },
+                        Some("in") => {
+                            if let Some(num_part) = hgt.get(..hgt.len()-2) {
+                                str_in_range(num_part, 59..=76)
+                            } else {
+                                false
+                            }
+                        },
+                        _ => false
+                    };
+                //println!("{}, {}, {}, {}", byr_valid, iyr_valid, eyr_valid, hgt_valid);
+                byr_valid && iyr_valid && eyr_valid && hgt_valid
+            }
+            _ => false,
+        }
     }
+}
+
+fn str_in_range(s: &str, r: impl RangeBounds<u32>) -> bool {
+    r.contains(&s.parse::<u32>().unwrap_or(0))
 }
 
 fn get_passport(buf: &mut BufReader<File>) -> Option<Vec<String>> {
